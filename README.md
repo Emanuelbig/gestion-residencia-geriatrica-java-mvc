@@ -4,6 +4,8 @@ Sistema de consola en Java para administrar una residencia geriátrica: resident
 
 Proyecto de **Programación II** (INSPT-UTN). Es la versión 2 del parcial, rehecha aplicando POO, principios SOLID y una arquitectura **MVC en capas** con persistencia en archivos de texto.
 
+La consigna original del parcial, y dónde se cumple cada punto, está en [docs/CONSIGNA.md](docs/CONSIGNA.md).
+
 ---
 
 ## Qué hace
@@ -12,16 +14,18 @@ Proyecto de **Programación II** (INSPT-UTN). Es la versión 2 del parcial, rehe
 |---|---|
 | Residentes | Alta, listado, modificación y baja |
 | Enfermeros | Alta, listado, modificación y baja |
-| Habitaciones | Alta, listado (libre / ocupada) y baja |
-| Reservas | Asignar una habitación a un residente y liberarla |
-| Asignaciones | Asignar un enfermero a una habitación y quitarlo |
-| Consultas | Habitación de un residente · Residentes de un enfermero · Enfermero de un residente |
+| Habitaciones | Alta (código automático), listado (libre / ocupada), consulta (quién la ocupa y quién la atiende) y baja |
+| Reservas | Asignar una habitación a un residente y liberarla. Antes muestra los residentes sin habitación y las habitaciones libres |
+| Asignaciones | Asignar un enfermero a una habitación y quitarlo. Antes muestra los enfermeros y las habitaciones sin enfermero |
+| Consultas | Residente con su habitación · Residentes de un enfermero · Enfermero de un residente |
+
+Las habitaciones no tienen "modificar": su único dato es el código, que es su identidad, y el estado ocupada / libre se calcula a partir de las reservas.
 
 ### Reglas de negocio
 
 - El DNI tiene 7 u 8 números y no se repite entre residentes y enfermeros.
 - Nombre y apellido llevan solo letras y espacios; se guardan prolijos (`"  juan   carlos"` → `"Juan Carlos"`).
-- Los ids se generan solos: residentes desde 1001, enfermeros desde 2001.
+- Los ids y los códigos se generan solos: residentes desde 1001, enfermeros desde 2001 y habitaciones desde HAB-101. Nunca se reutilizan, aunque se borre el registro (el último número usado se guarda en `data/ultimo-*.txt`).
 - Un residente ocupa como máximo **una** habitación, y una habitación tiene como máximo **un** residente.
 - Un enfermero puede atender **varias** habitaciones, pero cada habitación tiene como máximo **un** enfermero.
 - Si una habitación está ocupada **no se guarda**: se calcula a partir de las reservas (una sola fuente de verdad).
@@ -79,7 +83,7 @@ sequenceDiagram
 | Paquete | Responsabilidad |
 |---|---|
 | `modelos` | Las entidades. `Persona` es abstracta; `Residente` y `Enfermero` la heredan. `Habitacion`, `Reserva` y `Asignacion` son inmutables. |
-| `dto` | Objetos que viajan entre la vista y los servicios (`PersonaDTO`, `HabitacionDTO`). La vista nunca toca una entidad real. |
+| `dto` | Objetos que viajan entre la vista y los servicios (`PersonaDTO`, `HabitacionDTO`, `HabitacionDetalleDTO`, `PersonaHabitacionDTO`). La vista nunca toca una entidad real. |
 | `dao` | Persistencia. `GenericDAO<T, ID>` es el contrato; `ArchivoDAO` tiene escrita una sola vez la lógica de archivos y cada DAO concreto solo dice cómo pasar su entidad a una línea de texto y al revés. |
 | `servicios` | Las reglas de negocio. `PersonaServicio<T>` reúne lo común a residentes y enfermeros. Reciben los DAO por constructor. |
 | `controllers` | Puerta de entrada desde la vista. No tienen lógica: en la versión con Spring pasan a ser los `@RestController`. |
@@ -128,8 +132,8 @@ La carpeta `data/` trae datos de ejemplo: 4 residentes, 3 enfermeros, 5 habitaci
 src/main/java/prog2/gestiongeriatrica/
 ├── GestionGeriatrica.java   arma el sistema y lo arranca
 ├── modelos/                 Persona, Residente, Enfermero, Habitacion, Reserva, Asignacion
-├── dto/                     PersonaDTO, HabitacionDTO
-├── dao/                     GenericDAO, ArchivoDAO y un DAO por entidad
+├── dto/                     PersonaDTO, HabitacionDTO, HabitacionDetalleDTO, PersonaHabitacionDTO
+├── dao/                     GenericDAO, ArchivoDAO, un DAO por entidad y SecuenciaDAO
 ├── servicios/               PersonaServicio, Residente/Enfermero/Habitacion/Reserva/Asignacion/ReporteServicio
 ├── controllers/             PersonaController y un controller por servicio
 ├── vistas/                  Vista, MenuPrincipal, Consola y una vista por menú

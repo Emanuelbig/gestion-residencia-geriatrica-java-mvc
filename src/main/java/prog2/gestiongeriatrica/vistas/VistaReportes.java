@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import prog2.gestiongeriatrica.controllers.ReporteController;
 import prog2.gestiongeriatrica.dto.PersonaDTO;
+import prog2.gestiongeriatrica.dto.PersonaHabitacionDTO;
 import prog2.gestiongeriatrica.excepciones.GeriatricoException;
 
 /**
@@ -61,11 +62,12 @@ public class VistaReportes implements Vista {
 
     private void habitacionDeResidente() {
         int id = consola.pedirEntero("Id del residente: ");
-        Optional<String> codigo = controller.habitacionDeResidente(id);
-        if (codigo.isPresent()) {
-            System.out.println("Está en la habitación " + codigo.get() + ".");
+        PersonaHabitacionDTO dato = controller.habitacionDeResidente(id);
+        String nombre = dato.getPersona().getNombreCompleto();
+        if (dato.tieneHabitacion()) {
+            System.out.println(nombre + " está en la habitación " + dato.getCodigoHabitacion() + ".");
         } else {
-            System.out.println("No tiene habitación asignada.");
+            System.out.println(nombre + " no tiene habitación asignada.");
         }
     }
 

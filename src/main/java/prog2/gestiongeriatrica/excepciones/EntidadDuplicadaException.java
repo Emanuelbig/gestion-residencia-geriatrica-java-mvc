@@ -6,6 +6,8 @@ package prog2.gestiongeriatrica.excepciones;
  */
 public class EntidadDuplicadaException extends GeriatricoException {
 
+    private static final long serialVersionUID = 1L;
+
     public EntidadDuplicadaException(String message) {
         super(message);
     }

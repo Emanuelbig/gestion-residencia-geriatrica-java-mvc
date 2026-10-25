@@ -1,6 +1,7 @@
 package prog2.gestiongeriatrica.servicios;
 
 import prog2.gestiongeriatrica.dao.GenericDAO;
+import prog2.gestiongeriatrica.dao.SecuenciaDAO;
 import prog2.gestiongeriatrica.modelos.Enfermero;
 import prog2.gestiongeriatrica.modelos.Reserva;
 import prog2.gestiongeriatrica.modelos.Residente;
@@ -17,8 +18,9 @@ public class ResidenteServicio extends PersonaServicio<Residente> {
 
     public ResidenteServicio(GenericDAO<Residente, Integer> residenteDAO,
                              GenericDAO<Enfermero, Integer> enfermeroDAO,
-                             GenericDAO<Reserva, String> reservaDAO) {
-        super(residenteDAO, enfermeroDAO, PRIMER_ID);
+                             GenericDAO<Reserva, String> reservaDAO,
+                             SecuenciaDAO secuencia) {
+        super(residenteDAO, enfermeroDAO, secuencia, PRIMER_ID);
         this.reservaDAO = reservaDAO;
     }
 

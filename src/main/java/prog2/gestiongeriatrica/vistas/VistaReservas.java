@@ -1,7 +1,10 @@
 package prog2.gestiongeriatrica.vistas;
 
+import java.util.List;
 import prog2.gestiongeriatrica.controllers.ReservaController;
 import prog2.gestiongeriatrica.dto.HabitacionDTO;
+import prog2.gestiongeriatrica.dto.PersonaDTO;
+import prog2.gestiongeriatrica.dto.PersonaHabitacionDTO;
 import prog2.gestiongeriatrica.excepciones.GeriatricoException;
 
 /**
@@ -52,16 +55,41 @@ public class VistaReservas implements Vista {
         }
     }
 
+    // Antes de pedir los datos muestra qué se puede elegir, así el usuario no tiene que adivinar
     private void reservar() {
-        int idResidente = consola.pedirEntero("Id del residente: ");
-        String codigo = consola.pedirConFormato("Código de habitación: ", HabitacionDTO.PATRON_CODIGO, "Formato: HAB-101.");
-        controller.reservar(idResidente, codigo);
-        System.out.println("Reservada.");
+        List<PersonaDTO> residentes = controller.residentesSinHabitacion();
+        List<String> libres = controller.habitacionesLibres();
+        if (residentes.isEmpty()) {
+            System.out.println("Todos los residentes ya tienen habitación.");
+        } else if (libres.isEmpty()) {
+            System.out.println("No hay habitaciones libres.");
+        } else {
+            System.out.println("Residentes sin habitación:");
+            for (PersonaDTO r : residentes) {
+                System.out.println("  " + r.getId() + " | " + r.getNombreCompleto());
+            }
+            System.out.println("Habitaciones libres: " + String.join(", ", libres));
+            int idResidente = consola.pedirEntero("Id del residente: ");
+            controller.reservar(idResidente, pedirCodigo());
+            System.out.println("Reservada.");
+        }
     }
 
     private void liberar() {
-        String codigo = consola.pedirConFormato("Código de habitación: ", HabitacionDTO.PATRON_CODIGO, "Formato: HAB-101.");
-        controller.liberar(codigo);
-        System.out.println("Liberada.");
+        List<PersonaHabitacionDTO> ocupadas = controller.listar();
+        if (ocupadas.isEmpty()) {
+            System.out.println("No hay habitaciones ocupadas.");
+        } else {
+            System.out.println("Habitaciones ocupadas:");
+            for (PersonaHabitacionDTO o : ocupadas) {
+                System.out.println("  " + o.getCodigoHabitacion() + " | " + o.getPersona().getNombreCompleto());
+            }
+            controller.liberar(pedirCodigo());
+            System.out.println("Liberada.");
+        }
+    }
+
+    private String pedirCodigo() {
+        return consola.pedirConFormato("Código de habitación: ", HabitacionDTO.PATRON_CODIGO, "Formato: HAB-101.");
     }
 }

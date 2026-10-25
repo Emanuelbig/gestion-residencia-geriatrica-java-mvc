@@ -1,5 +1,7 @@
 package prog2.gestiongeriatrica.controllers;
 
+import java.util.List;
+import prog2.gestiongeriatrica.dto.PersonaHabitacionDTO;
 import prog2.gestiongeriatrica.servicios.AsignacionServicio;
 
 /**
@@ -20,5 +22,13 @@ public class AsignacionController {
 
     public void quitar(String codigo) {
         servicio.quitar(codigo);
+    }
+
+    public List<PersonaHabitacionDTO> listar() {
+        return servicio.listar();
+    }
+
+    public List<String> habitacionesSinEnfermero() {
+        return servicio.habitacionesSinEnfermero();
     }
 }

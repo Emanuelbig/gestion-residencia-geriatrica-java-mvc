@@ -6,6 +6,8 @@ package prog2.gestiongeriatrica.excepciones;
  */
 public class EntidadNoEncontradaException extends GeriatricoException {
 
+    private static final long serialVersionUID = 1L;
+
     public EntidadNoEncontradaException(String message) {
         super(message);
     }

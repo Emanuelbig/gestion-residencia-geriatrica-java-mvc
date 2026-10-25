@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import prog2.gestiongeriatrica.dao.GenericDAO;
+import prog2.gestiongeriatrica.dao.SecuenciaDAO;
 import prog2.gestiongeriatrica.dto.PersonaDTO;
 import prog2.gestiongeriatrica.excepciones.DatosInvalidosException;
 import prog2.gestiongeriatrica.excepciones.EntidadDuplicadaException;
@@ -21,14 +22,17 @@ import prog2.gestiongeriatrica.modelos.Persona;
 public abstract class PersonaServicio<T extends Persona> {
 
     private final GenericDAO<T, Integer> dao;
-    private final GenericDAO<? extends Persona, Integer> otrasPersonasDAO;   // el DNI no se repite entre tipos
+    private final GenericDAO<? extends Persona, Integer> otrasPersonasDAO;   // el DNI no se repite entre tipos   
+    private final SecuenciaDAO secuencia;                                    // último id usado, para no repetirlo
     private final int primerId;
 
     protected PersonaServicio(GenericDAO<T, Integer> dao,
                               GenericDAO<? extends Persona, Integer> otrasPersonasDAO,
+                              SecuenciaDAO secuencia,
                               int primerId) {
         this.dao = dao;
         this.otrasPersonasDAO = otrasPersonasDAO;
+        this.secuencia = secuencia;
         this.primerId = primerId;
     }
 
@@ -52,18 +56,19 @@ public abstract class PersonaServicio<T extends Persona> {
         }
         int id = generarId();
         dao.crear(crearPersona(id, datos.getDni(), datos.getNombre(), datos.getApellido()));
+        secuencia.guardarUltimo(id);  
     }
 
     public List<PersonaDTO> listar() {
         List<PersonaDTO> resultado = new ArrayList<>();
         for (T p : dao.listarTodos()) {
-            resultado.add(aDTO(p));
+            resultado.add(PersonaDTO.desde(p));
         }
         return resultado;
     }
 
     public PersonaDTO obtener(int id) {
-        return aDTO(buscar(id));
+        return PersonaDTO.desde(buscar(id));
     }
 
     public void modificar(int id, PersonaDTO datos) {
@@ -91,10 +96,6 @@ public abstract class PersonaServicio<T extends Persona> {
             throw new EntidadNoEncontradaException("No existe el " + nombreEntidad() + " " + id + ".");
         }
         return encontrado.get();
-    }
-
-    private PersonaDTO aDTO(T p) {
-        return new PersonaDTO(p.getDni(), p.getNombre(), p.getApellido(), p.getId());
     }
 
     private PersonaDTO limpiar(PersonaDTO datos) {
@@ -134,7 +135,7 @@ public abstract class PersonaServicio<T extends Persona> {
     }
 
     private int generarId() {
-        int mayor = primerId - 1;
+        int mayor = Math.max(primerId - 1, secuencia.leerUltimo());
         for (T p : dao.listarTodos()) {
             if (p.getId() > mayor) {
                 mayor = p.getId();

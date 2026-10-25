@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import prog2.gestiongeriatrica.controllers.AsignacionController;
 import prog2.gestiongeriatrica.controllers.EnfermeroController;
 import prog2.gestiongeriatrica.controllers.HabitacionController;
+import prog2.gestiongeriatrica.controllers.PersonaController;
 import prog2.gestiongeriatrica.controllers.ReporteController;
 import prog2.gestiongeriatrica.controllers.ReservaController;
 import prog2.gestiongeriatrica.controllers.ResidenteController;
@@ -15,6 +16,9 @@ import prog2.gestiongeriatrica.dao.GenericDAO;
 import prog2.gestiongeriatrica.dao.HabitacionDAOArchivo;
 import prog2.gestiongeriatrica.dao.ReservaDAOArchivo;
 import prog2.gestiongeriatrica.dao.ResidenteDAOArchivo;
+import prog2.gestiongeriatrica.dao.SecuenciaArchivoDAO;
+import prog2.gestiongeriatrica.dao.SecuenciaDAO;
+import prog2.gestiongeriatrica.excepciones.PersistenciaException;
 import prog2.gestiongeriatrica.modelos.Asignacion;
 import prog2.gestiongeriatrica.modelos.Enfermero;
 import prog2.gestiongeriatrica.modelos.Habitacion;
@@ -45,9 +49,20 @@ public class GestionGeriatrica {
     private static final Path CARPETA_DATOS = Path.of("data");
 
     public static void main(String[] args) {
-        
+
         System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
-        
+
+        try {
+            armarSistema().iniciar();
+        } catch (PersistenciaException e) {
+            // por ejemplo, un archivo de data/ que no se puede leer al arrancar
+            System.out.println("No se pudo iniciar el sistema: " + e.getMessage());
+        }
+    }
+
+    /** Crea todas las piezas y las conecta. Devuelve el menú listo para arrancar. */
+    private static MenuPrincipal armarSistema() {
+
         // 1. Persistencia: lo único que sabe que hay archivos de texto
         GenericDAO<Residente, Integer> residenteDAO = new ResidenteDAOArchivo(CARPETA_DATOS.resolve("residentes.txt"));
         GenericDAO<Enfermero, Integer> enfermeroDAO = new EnfermeroDAOArchivo(CARPETA_DATOS.resolve("enfermeros.txt"));
@@ -55,24 +70,32 @@ public class GestionGeriatrica {
         GenericDAO<Reserva, String> reservaDAO = new ReservaDAOArchivo(CARPETA_DATOS.resolve("reservas.txt"));
         GenericDAO<Asignacion, String> asignacionDAO = new AsignacionDAOArchivo(CARPETA_DATOS.resolve("asignaciones.txt"));
 
+        // Últimos números usados: así no se repiten ids ni códigos aunque se borre el registro
+        SecuenciaDAO secuenciaResidentes = new SecuenciaArchivoDAO(CARPETA_DATOS.resolve("ultimo-residente.txt"));
+        SecuenciaDAO secuenciaEnfermeros = new SecuenciaArchivoDAO(CARPETA_DATOS.resolve("ultimo-enfermero.txt"));
+        SecuenciaDAO secuenciaHabitaciones = new SecuenciaArchivoDAO(CARPETA_DATOS.resolve("ultima-habitacion.txt"));
+
         // 2. Reglas de negocio: reciben los DAO, no los crean
-        ResidenteServicio residenteServicio = new ResidenteServicio(residenteDAO, enfermeroDAO, reservaDAO);
-        EnfermeroServicio enfermeroServicio = new EnfermeroServicio(enfermeroDAO, residenteDAO, asignacionDAO);
-        HabitacionServicio habitacionServicio = new HabitacionServicio(habitacionDAO, reservaDAO, asignacionDAO);
+        ResidenteServicio residenteServicio = new ResidenteServicio(residenteDAO, enfermeroDAO, reservaDAO, secuenciaResidentes);
+        EnfermeroServicio enfermeroServicio = new EnfermeroServicio(enfermeroDAO, residenteDAO, asignacionDAO, secuenciaEnfermeros);
+        HabitacionServicio habitacionServicio = new HabitacionServicio(habitacionDAO, reservaDAO, asignacionDAO,
+                residenteDAO, enfermeroDAO, secuenciaHabitaciones);
         ReservaServicio reservaServicio = new ReservaServicio(reservaDAO, residenteDAO, habitacionDAO);
         AsignacionServicio asignacionServicio = new AsignacionServicio(asignacionDAO, enfermeroDAO, habitacionDAO);
         ReporteServicio reporteServicio = new ReporteServicio(residenteDAO, enfermeroDAO, reservaDAO, asignacionDAO);
 
-        // 3. Vista
+        // 3. Vista (el controller de enfermeros lo usan dos pantallas)
+        PersonaController residenteController = new ResidenteController(residenteServicio);
+        PersonaController enfermeroController = new EnfermeroController(enfermeroServicio);
+
         Consola consola = new Consola();
         MenuPrincipal menu = new MenuPrincipal(consola);
-        menu.registrar(new VistaPersonas("Residentes", new ResidenteController(residenteServicio), consola));
-        menu.registrar(new VistaPersonas("Enfermeros", new EnfermeroController(enfermeroServicio), consola));
+        menu.registrar(new VistaPersonas("Residentes", residenteController, consola));
+        menu.registrar(new VistaPersonas("Enfermeros", enfermeroController, consola));
         menu.registrar(new VistaHabitaciones(new HabitacionController(habitacionServicio), consola));
         menu.registrar(new VistaReservas(new ReservaController(reservaServicio), consola));
-        menu.registrar(new VistaAsignaciones(new AsignacionController(asignacionServicio), consola));
+        menu.registrar(new VistaAsignaciones(new AsignacionController(asignacionServicio), enfermeroController, consola));
         menu.registrar(new VistaReportes(new ReporteController(reporteServicio), consola));
-
-        menu.iniciar();
+        return menu;
     }
 }

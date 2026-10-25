@@ -6,6 +6,8 @@ package prog2.gestiongeriatrica.excepciones;
  */
 public class PersistenciaException extends GeriatricoException {
 
+    private static final long serialVersionUID = 1L;
+
     public PersistenciaException(String message) {
         super(message);
     }

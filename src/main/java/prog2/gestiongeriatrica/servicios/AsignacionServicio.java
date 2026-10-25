@@ -1,6 +1,11 @@
 package prog2.gestiongeriatrica.servicios;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import prog2.gestiongeriatrica.dao.GenericDAO;
+import prog2.gestiongeriatrica.dto.PersonaDTO;
+import prog2.gestiongeriatrica.dto.PersonaHabitacionDTO;
 import prog2.gestiongeriatrica.excepciones.EntidadNoEncontradaException;
 import prog2.gestiongeriatrica.excepciones.OperacionNoPermitidaException;
 import prog2.gestiongeriatrica.modelos.Asignacion;
@@ -46,5 +51,28 @@ public class AsignacionServicio {
             throw new EntidadNoEncontradaException("La habitación " + normalizado + " no tiene enfermero asignado.");
         }
         asignacionDAO.eliminar(normalizado);
+    }
+
+    /** Habitaciones que tienen enfermero, cada una con el suyo. */
+    public List<PersonaHabitacionDTO> listar() {
+        List<PersonaHabitacionDTO> resultado = new ArrayList<>();
+        for (Asignacion a : asignacionDAO.listarTodos()) {
+            Optional<Enfermero> enfermero = enfermeroDAO.buscarPorId(a.getIdEnfermero());
+            if (enfermero.isPresent()) {
+                resultado.add(new PersonaHabitacionDTO(PersonaDTO.desde(enfermero.get()), a.getCodigoHabitacion()));
+            }
+        }
+        return resultado;
+    }
+
+    /** Códigos de las habitaciones que todavía no tienen enfermero. */
+    public List<String> habitacionesSinEnfermero() {
+        List<String> resultado = new ArrayList<>();
+        for (Habitacion h : habitacionDAO.listarTodos()) {
+            if (asignacionDAO.buscarPorId(h.getCodigo()).isEmpty()) {
+                resultado.add(h.getCodigo());
+            }
+        }
+        return resultado;
     }
 }

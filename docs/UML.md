@@ -76,7 +76,15 @@ classDiagram
   ArchivoDAO <|-- HabitacionDAOArchivo
   ArchivoDAO <|-- ReservaDAOArchivo
   ArchivoDAO <|-- AsignacionDAOArchivo
+  class SecuenciaDAO {
+    <<interface>>
+    +leerUltimo() int
+    +guardarUltimo(int) void
+  }
+  SecuenciaDAO <|.. SecuenciaArchivoDAO
 ```
+
+`SecuenciaDAO` guarda el último id o código usado (`data/ultimo-residente.txt`, `ultimo-enfermero.txt`, `ultima-habitacion.txt`), así no se repite aunque se borre el registro.
 
 | DAO | `T` | `ID` | Línea en el archivo |
 |---|---|---|---|
@@ -95,6 +103,7 @@ classDiagram
     <<abstract>>
     -GenericDAO dao
     -GenericDAO otrasPersonasDAO
+    -SecuenciaDAO secuencia
     -int primerId
     +crear(PersonaDTO) void
     +listar() List~PersonaDTO~
@@ -109,26 +118,34 @@ classDiagram
   PersonaServicio <|-- ResidenteServicio
   PersonaServicio <|-- EnfermeroServicio
   class HabitacionServicio {
-    +crear(String) void
+    +crear() String
     +listar() List~HabitacionDTO~
+    +obtener(String) HabitacionDetalleDTO
     +eliminar(String) void
   }
   class ReservaServicio {
     +reservar(int, String) void
     +liberar(String) void
+    +listar() List~PersonaHabitacionDTO~
+    +residentesSinHabitacion() List~PersonaDTO~
+    +habitacionesLibres() List~String~
   }
   class AsignacionServicio {
     +asignar(int, String) void
     +quitar(String) void
+    +listar() List~PersonaHabitacionDTO~
+    +habitacionesSinEnfermero() List~String~
   }
   class ReporteServicio {
-    +habitacionDeResidente(int) Optional~String~
+    +habitacionDeResidente(int) PersonaHabitacionDTO
     +residentesDeEnfermero(int) List~PersonaDTO~
     +enfermeroDeResidente(int) Optional~PersonaDTO~
   }
 ```
 
 Todos los servicios reciben sus `GenericDAO` por constructor y nunca hacen `new` de un DAO.
+
+**DTO:** `PersonaDTO` (con `desde(Persona)` para armarlo desde la entidad) · `HabitacionDTO` (código y si está ocupada) · `HabitacionDetalleDTO` (código, residente y enfermero) · `PersonaHabitacionDTO` (una persona con el código de su habitación; se usa en las reservas, las asignaciones y la consulta 1).
 
 ## 4. Vista y controllers
 

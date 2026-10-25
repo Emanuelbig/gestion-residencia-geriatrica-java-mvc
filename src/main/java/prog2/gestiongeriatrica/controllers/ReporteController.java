@@ -3,6 +3,7 @@ package prog2.gestiongeriatrica.controllers;
 import java.util.List;
 import java.util.Optional;
 import prog2.gestiongeriatrica.dto.PersonaDTO;
+import prog2.gestiongeriatrica.dto.PersonaHabitacionDTO;
 import prog2.gestiongeriatrica.servicios.ReporteServicio;
 
 /**
@@ -17,7 +18,7 @@ public class ReporteController {
         this.servicio = servicio;
     }
 
-    public Optional<String> habitacionDeResidente(int idResidente) {
+    public PersonaHabitacionDTO habitacionDeResidente(int idResidente) {
         return servicio.habitacionDeResidente(idResidente);
     }
 

@@ -5,10 +5,10 @@ import java.util.List;
 import java.util.Optional;
 import prog2.gestiongeriatrica.dao.GenericDAO;
 import prog2.gestiongeriatrica.dto.PersonaDTO;
+import prog2.gestiongeriatrica.dto.PersonaHabitacionDTO;
 import prog2.gestiongeriatrica.excepciones.EntidadNoEncontradaException;
 import prog2.gestiongeriatrica.modelos.Asignacion;
 import prog2.gestiongeriatrica.modelos.Enfermero;
-import prog2.gestiongeriatrica.modelos.Persona;
 import prog2.gestiongeriatrica.modelos.Reserva;
 import prog2.gestiongeriatrica.modelos.Residente;
 
@@ -31,14 +31,15 @@ public class ReporteServicio {
     }
 
 
-    /** 1. ¿En qué habitación está el residente? Vacío si no tiene. */
-    public Optional<String> habitacionDeResidente(int idResidente) {
-        verificarResidente(idResidente);
+    /** 1. El residente con la habitación que ocupa (sin código si no tiene). */
+    public PersonaHabitacionDTO habitacionDeResidente(int idResidente) {
+        Residente residente = buscarResidente(idResidente);
         Optional<Reserva> reserva = buscarReservaDe(idResidente);
-        if (reserva.isEmpty()) {
-            return Optional.empty();
+        String codigo = null;                                   // queda null si no tiene habitación
+        if (reserva.isPresent()) {
+            codigo = reserva.get().getCodigoHabitacion();
         }
-        return Optional.of(reserva.get().getCodigoHabitacion());
+        return new PersonaHabitacionDTO(PersonaDTO.desde(residente), codigo);
     }
 
     /** 2. ¿Qué residentes atiende el enfermero? */
@@ -53,7 +54,7 @@ public class ReporteServicio {
                 if (reserva.isPresent()) {
                     Optional<Residente> r = residenteDAO.buscarPorId(reserva.get().getIdResidente());
                     if (r.isPresent()) {
-                        resultado.add(aDTO(r.get()));
+                        resultado.add(PersonaDTO.desde(r.get()));
                     }
                 }
             }
@@ -63,7 +64,7 @@ public class ReporteServicio {
 
     /** 3. ¿Qué enfermero atiende al residente? Vacío si no tiene. */
     public Optional<PersonaDTO> enfermeroDeResidente(int idResidente) {
-        verificarResidente(idResidente);
+        buscarResidente(idResidente);                           // si no existe, lanza la excepción
         Optional<Reserva> reserva = buscarReservaDe(idResidente);
         if (reserva.isEmpty()) {
             return Optional.empty();
@@ -76,13 +77,15 @@ public class ReporteServicio {
         if (enfermero.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(aDTO(enfermero.get()));
+        return Optional.of(PersonaDTO.desde(enfermero.get()));
     }
 
-    private void verificarResidente(int idResidente) {
-        if (residenteDAO.buscarPorId(idResidente).isEmpty()) {
+    private Residente buscarResidente(int idResidente) {
+        Optional<Residente> residente = residenteDAO.buscarPorId(idResidente);
+        if (residente.isEmpty()) {
             throw new EntidadNoEncontradaException("No existe el residente " + idResidente + ".");
         }
+        return residente.get();
     }
 
     private Optional<Reserva> buscarReservaDe(int idResidente) {
@@ -94,8 +97,4 @@ public class ReporteServicio {
         return Optional.empty();
     }
 
-    private PersonaDTO aDTO(Persona p) {
-        return new PersonaDTO(p.getDni(), p.getNombre(), p.getApellido(), p.getId());
-    }
-    
 }

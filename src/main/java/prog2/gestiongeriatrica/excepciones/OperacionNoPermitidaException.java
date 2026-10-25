@@ -6,6 +6,8 @@ package prog2.gestiongeriatrica.excepciones;
  */
 public class OperacionNoPermitidaException extends GeriatricoException {
 
+    private static final long serialVersionUID = 1L;
+
     public OperacionNoPermitidaException(String message) {
         super(message);
     }

@@ -6,7 +6,7 @@ package prog2.gestiongeriatrica.dto;
  */
 public class HabitacionDTO {
     
-    public static final String PATRON_CODIGO = "(?i)HAB-\\d{3}";
+    public static final String PATRON_CODIGO = "(?i)HAB-\\d{3,}";
     
     private final String codigo;
     private final boolean ocupada;

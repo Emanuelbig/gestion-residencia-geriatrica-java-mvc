@@ -6,6 +6,8 @@ package prog2.gestiongeriatrica.excepciones;
  */
 public class DatosInvalidosException extends GeriatricoException {
 
+    private static final long serialVersionUID = 1L;
+
     public DatosInvalidosException(String message) {
         super(message);
     }
