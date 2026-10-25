@@ -1,0 +1,9 @@
+# Compilados de Maven
+target/
+
+# Configuración local de NetBeans
+nb-configuration.xml
+nbproject/private/
+
+
+
