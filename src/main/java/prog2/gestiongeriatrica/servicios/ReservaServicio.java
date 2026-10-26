@@ -9,60 +9,57 @@ import prog2.gestiongeriatrica.dto.PersonaHabitacionDTO;
 import prog2.gestiongeriatrica.excepciones.EntidadNoEncontradaException;
 import prog2.gestiongeriatrica.excepciones.OperacionNoPermitidaException;
 import prog2.gestiongeriatrica.modelos.Habitacion;
-import prog2.gestiongeriatrica.modelos.Reserva;
 import prog2.gestiongeriatrica.modelos.Residente;
 
 /**
  * Reglas de las reservas: un residente ocupa como máximo una habitación,
- * y una habitación tiene como máximo un residente.
+ * y una habitación tiene como máximo un residente. La reserva se guarda en la habitación (idResidente).
  * @author Emanuel
  */
 public class ReservaServicio {
-    
-    private final GenericDAO<Reserva, String> reservaDAO;
-    private final GenericDAO<Residente, Integer> residenteDAO;
-    private final GenericDAO<Habitacion, String> habitacionDAO;
 
-    public ReservaServicio(GenericDAO<Reserva, String> reservaDAO,
-                       GenericDAO<Residente, Integer> residenteDAO,
-                       GenericDAO<Habitacion, String> habitacionDAO) {
-        this.reservaDAO = reservaDAO;
-        this.residenteDAO = residenteDAO;
+    private final GenericDAO<Habitacion, String> habitacionDAO;
+    private final GenericDAO<Residente, Integer> residenteDAO;
+
+    public ReservaServicio(GenericDAO<Habitacion, String> habitacionDAO,
+                       GenericDAO<Residente, Integer> residenteDAO) {
         this.habitacionDAO = habitacionDAO;
+        this.residenteDAO = residenteDAO;
     }
-    
-     public void reservar(int idResidente, String codigo) {
+
+    public void reservar(int idResidente, String codigo) {
         String normalizado = Habitacion.normalizarCodigo(codigo);
         if (residenteDAO.buscarPorId(idResidente).isEmpty()) {
             throw new EntidadNoEncontradaException("No existe el residente " + idResidente + ".");
         }
-        if (habitacionDAO.buscarPorId(normalizado).isEmpty()) {
-            throw new EntidadNoEncontradaException("No existe la habitación " + normalizado + ".");
-        }
-        if (tieneReserva(idResidente)) {
+        Habitacion habitacion = buscarHabitacion(normalizado);
+        if (tieneHabitacion(idResidente)) {
             throw new OperacionNoPermitidaException("El residente " + idResidente + " ya tiene una habitación.");
         }
-        if (reservaDAO.buscarPorId(normalizado).isPresent()) {
+        if (habitacion.isOcupada()) {
             throw new OperacionNoPermitidaException("La habitación " + normalizado + " ya está ocupada.");
         }
-        reservaDAO.crear(new Reserva(idResidente, normalizado));
+        habitacionDAO.actualizar(habitacion.conResidente(idResidente));
     }
 
     public void liberar(String codigo) {
         String normalizado = Habitacion.normalizarCodigo(codigo);
-        if (reservaDAO.buscarPorId(normalizado).isEmpty()) {
+        Habitacion habitacion = buscarHabitacion(normalizado);
+        if (!habitacion.isOcupada()) {
             throw new EntidadNoEncontradaException("La habitación " + normalizado + " no está ocupada.");
         }
-        reservaDAO.eliminar(normalizado);
+        habitacionDAO.actualizar(habitacion.conResidente(null));
     }
 
     /** Habitaciones ocupadas, cada una con su residente. */
     public List<PersonaHabitacionDTO> listar() {
         List<PersonaHabitacionDTO> resultado = new ArrayList<>();
-        for (Reserva r : reservaDAO.listarTodos()) {
-            Optional<Residente> residente = residenteDAO.buscarPorId(r.getIdResidente());
-            if (residente.isPresent()) {
-                resultado.add(new PersonaHabitacionDTO(PersonaDTO.desde(residente.get()), r.getCodigoHabitacion()));
+        for (Habitacion h : habitacionDAO.listarTodos()) {
+            if (h.isOcupada()) {
+                Optional<Residente> residente = residenteDAO.buscarPorId(h.getIdResidente());
+                if (residente.isPresent()) {
+                    resultado.add(new PersonaHabitacionDTO(PersonaDTO.desde(residente.get()), h.getCodigo()));
+                }
             }
         }
         return resultado;
@@ -72,7 +69,7 @@ public class ReservaServicio {
     public List<PersonaDTO> residentesSinHabitacion() {
         List<PersonaDTO> resultado = new ArrayList<>();
         for (Residente r : residenteDAO.listarTodos()) {
-            if (!tieneReserva(r.getId())) {
+            if (!tieneHabitacion(r.getId())) {
                 resultado.add(PersonaDTO.desde(r));
             }
         }
@@ -83,16 +80,24 @@ public class ReservaServicio {
     public List<String> habitacionesLibres() {
         List<String> resultado = new ArrayList<>();
         for (Habitacion h : habitacionDAO.listarTodos()) {
-            if (reservaDAO.buscarPorId(h.getCodigo()).isEmpty()) {
+            if (!h.isOcupada()) {
                 resultado.add(h.getCodigo());
             }
         }
         return resultado;
     }
 
-    private boolean tieneReserva(int idResidente) {
-        for (Reserva r : reservaDAO.listarTodos()) {
-            if (r.getIdResidente() == idResidente) {
+    private Habitacion buscarHabitacion(String codigo) {
+        Optional<Habitacion> habitacion = habitacionDAO.buscarPorId(codigo);
+        if (habitacion.isEmpty()) {
+            throw new EntidadNoEncontradaException("No existe la habitación " + codigo + ".");
+        }
+        return habitacion.get();
+    }
+
+    private boolean tieneHabitacion(int idResidente) {
+        for (Habitacion h : habitacionDAO.listarTodos()) {
+            if (h.estaOcupadaPor(idResidente)) {
                 return true;
             }
         }

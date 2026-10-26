@@ -19,7 +19,7 @@ La consigna original del parcial, y dónde se cumple cada punto, está en [docs/
 | Asignaciones | Asignar un enfermero a una habitación y quitarlo. Antes muestra los enfermeros y las habitaciones sin enfermero |
 | Consultas | Residente con su habitación · Residentes de un enfermero · Enfermero de un residente |
 
-Las habitaciones no tienen "modificar": su único dato es el código, que es su identidad, y el estado ocupada / libre se calcula a partir de las reservas.
+Las habitaciones no tienen "modificar" a mano: su código es su identidad, y quién la ocupa o la atiende se cambia desde las reservas y las asignaciones.
 
 ### Reglas de negocio
 
@@ -28,8 +28,21 @@ Las habitaciones no tienen "modificar": su único dato es el código, que es su 
 - Los ids y los códigos se generan solos: residentes desde 1001, enfermeros desde 2001 y habitaciones desde HAB-101. Nunca se reutilizan, aunque se borre el registro (el último número usado se guarda en `data/ultimo-*.txt`).
 - Un residente ocupa como máximo **una** habitación, y una habitación tiene como máximo **un** residente.
 - Un enfermero puede atender **varias** habitaciones, pero cada habitación tiene como máximo **un** enfermero.
-- Si una habitación está ocupada **no se guarda**: se calcula a partir de las reservas (una sola fuente de verdad).
+- La reserva y la asignación se guardan **dentro de la habitación** (`idResidente` e `idEnfermero`, vacíos si no hay). La habitación está ocupada cuando tiene un residente: no hay un campo `ocupada` aparte que se pueda desincronizar.
 - No se puede borrar nada que esté en uso: un residente con habitación, un enfermero con asignaciones o una habitación ocupada o con enfermero.
+
+### Modelo de datos: 3 archivos
+
+```
+residentes.txt     1001,20345678,Rosa,Fernández
+enfermeros.txt     2001,33456789,Lucía,Pérez
+habitaciones.txt   HAB-101,1001,2001      ← código, residente que la ocupa, enfermero que la atiende
+                   HAB-104,,              ← libre y sin enfermero
+```
+
+Ninguna relación es *muchos a muchos* (residente ↔ habitación es uno a uno; enfermero → habitaciones es uno a muchos), así que no hace falta un archivo intermedio: alcanza con guardar el id del otro lado dentro de la habitación. Reservar es guardar el `idResidente`; liberar es dejarlo vacío.
+
+> Una versión anterior tenía 5 archivos (con `reservas.txt` y `asignaciones.txt`) y quedó en el historial de git. Un archivo intermedio solo hace falta si la relación es muchos a muchos o tiene datos propios (por ejemplo, fecha de ingreso).
 
 ---
 
@@ -82,7 +95,7 @@ sequenceDiagram
 
 | Paquete | Responsabilidad |
 |---|---|
-| `modelos` | Las entidades. `Persona` es abstracta; `Residente` y `Enfermero` la heredan. `Habitacion`, `Reserva` y `Asignacion` son inmutables. |
+| `modelos` | Las entidades. `Persona` es abstracta; `Residente` y `Enfermero` la heredan. `Habitacion` guarda su residente y su enfermero, y es inmutable: reservar o asignar crea una copia (`conResidente`, `conEnfermero`) que el DAO guarda con `actualizar`. |
 | `dto` | Objetos que viajan entre la vista y los servicios (`PersonaDTO`, `HabitacionDTO`, `HabitacionDetalleDTO`, `PersonaHabitacionDTO`). La vista nunca toca una entidad real. |
 | `dao` | Persistencia. `GenericDAO<T, ID>` es el contrato; `ArchivoDAO` tiene escrita una sola vez la lógica de archivos y cada DAO concreto solo dice cómo pasar su entidad a una línea de texto y al revés. |
 | `servicios` | Las reglas de negocio. `PersonaServicio<T>` reúne lo común a residentes y enfermeros. Reciben los DAO por constructor. |
@@ -106,7 +119,7 @@ Los diagramas UML completos están en [docs/UML.md](docs/UML.md).
 | **O** — Abierto/cerrado | Una pantalla nueva es una línea `menu.registrar(...)` en el `Main`, sin tocar `MenuPrincipal` |
 | **L** — Sustitución de Liskov | Cualquier `Persona` o `Vista` se usa donde se espera la clase padre |
 | **I** — Segregación de interfaces | Interfaces chicas: `GenericDAO`, `Vista`, `PersonaController` |
-| **D** — Inversión de dependencias | Los servicios dependen de `GenericDAO`, no de la clase de archivo. Pasar a MySQL es cambiar 5 líneas del `Main`. |
+| **D** — Inversión de dependencias | Los servicios dependen de `GenericDAO`, no de la clase de archivo. Pasar a MySQL es cambiar 3 líneas del `Main`. |
 
 ---
 
@@ -122,7 +135,7 @@ Los diagramas UML completos están en [docs/UML.md](docs/UML.md).
 mvn compile exec:java
 ```
 
-La carpeta `data/` trae datos de ejemplo: 4 residentes, 3 enfermeros, 5 habitaciones (3 ocupadas) y 3 asignaciones. Los cambios que hagas se guardan ahí y se conservan entre ejecuciones. Si borrás la carpeta, el programa arranca vacío y la vuelve a crear.
+La carpeta `data/` trae datos de ejemplo: 4 residentes, 3 enfermeros, 5 habitaciones (3 ocupadas y con enfermero). Los cambios que hagas se guardan ahí y se conservan entre ejecuciones. Si borrás la carpeta, el programa arranca vacío y la vuelve a crear.
 
 ---
 
@@ -131,7 +144,7 @@ La carpeta `data/` trae datos de ejemplo: 4 residentes, 3 enfermeros, 5 habitaci
 ```
 src/main/java/prog2/gestiongeriatrica/
 ├── GestionGeriatrica.java   arma el sistema y lo arranca
-├── modelos/                 Persona, Residente, Enfermero, Habitacion, Reserva, Asignacion
+├── modelos/                 Persona, Residente, Enfermero, Habitacion
 ├── dto/                     PersonaDTO, HabitacionDTO, HabitacionDetalleDTO, PersonaHabitacionDTO
 ├── dao/                     GenericDAO, ArchivoDAO, un DAO por entidad y SecuenciaDAO
 ├── servicios/               PersonaServicio, Residente/Enfermero/Habitacion/Reserva/Asignacion/ReporteServicio

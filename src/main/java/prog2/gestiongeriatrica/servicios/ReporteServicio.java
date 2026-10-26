@@ -7,55 +7,51 @@ import prog2.gestiongeriatrica.dao.GenericDAO;
 import prog2.gestiongeriatrica.dto.PersonaDTO;
 import prog2.gestiongeriatrica.dto.PersonaHabitacionDTO;
 import prog2.gestiongeriatrica.excepciones.EntidadNoEncontradaException;
-import prog2.gestiongeriatrica.modelos.Asignacion;
 import prog2.gestiongeriatrica.modelos.Enfermero;
-import prog2.gestiongeriatrica.modelos.Reserva;
+import prog2.gestiongeriatrica.modelos.Habitacion;
 import prog2.gestiongeriatrica.modelos.Residente;
 
 /**
- * Consultas que cruzan datos de varias entidades.
+ * Consultas que cruzan datos de varias entidades. Todas pasan por la habitación,
+ * que es la que sabe quién la ocupa y quién la atiende.
  * @author Emanuel
  */
 public class ReporteServicio {
-    
+
     private final GenericDAO<Residente, Integer> residenteDAO;
     private final GenericDAO<Enfermero, Integer> enfermeroDAO;
-    private final GenericDAO<Reserva, String> reservaDAO;
-    private final GenericDAO<Asignacion, String> asignacionDAO;
+    private final GenericDAO<Habitacion, String> habitacionDAO;
 
-    public ReporteServicio(GenericDAO<Residente, Integer> residenteDAO, GenericDAO<Enfermero, Integer> enfermeroDAO, GenericDAO<Reserva, String> reservaDAO, GenericDAO<Asignacion, String> asignacionDAO) {
+    public ReporteServicio(GenericDAO<Residente, Integer> residenteDAO,
+                           GenericDAO<Enfermero, Integer> enfermeroDAO,
+                           GenericDAO<Habitacion, String> habitacionDAO) {
         this.residenteDAO = residenteDAO;
         this.enfermeroDAO = enfermeroDAO;
-        this.reservaDAO = reservaDAO;
-        this.asignacionDAO = asignacionDAO;
+        this.habitacionDAO = habitacionDAO;
     }
-
 
     /** 1. El residente con la habitación que ocupa (sin código si no tiene). */
     public PersonaHabitacionDTO habitacionDeResidente(int idResidente) {
         Residente residente = buscarResidente(idResidente);
-        Optional<Reserva> reserva = buscarReservaDe(idResidente);
+        Optional<Habitacion> habitacion = buscarHabitacionDe(idResidente);
         String codigo = null;                                   // queda null si no tiene habitación
-        if (reserva.isPresent()) {
-            codigo = reserva.get().getCodigoHabitacion();
+        if (habitacion.isPresent()) {
+            codigo = habitacion.get().getCodigo();
         }
         return new PersonaHabitacionDTO(PersonaDTO.desde(residente), codigo);
     }
 
-    /** 2. ¿Qué residentes atiende el enfermero? */
+    /** 2. ¿Qué residentes atiende el enfermero? Los de las habitaciones ocupadas que tiene asignadas. */
     public List<PersonaDTO> residentesDeEnfermero(int idEnfermero) {
         if (enfermeroDAO.buscarPorId(idEnfermero).isEmpty()) {
             throw new EntidadNoEncontradaException("No existe el enfermero " + idEnfermero + ".");
         }
         List<PersonaDTO> resultado = new ArrayList<>();
-        for (Asignacion a : asignacionDAO.listarTodos()) {
-            if (a.getIdEnfermero() == idEnfermero) {
-                Optional<Reserva> reserva = reservaDAO.buscarPorId(a.getCodigoHabitacion());
-                if (reserva.isPresent()) {
-                    Optional<Residente> r = residenteDAO.buscarPorId(reserva.get().getIdResidente());
-                    if (r.isPresent()) {
-                        resultado.add(PersonaDTO.desde(r.get()));
-                    }
+        for (Habitacion h : habitacionDAO.listarTodos()) {
+            if (h.esAtendidaPor(idEnfermero) && h.isOcupada()) {
+                Optional<Residente> r = residenteDAO.buscarPorId(h.getIdResidente());
+                if (r.isPresent()) {
+                    resultado.add(PersonaDTO.desde(r.get()));
                 }
             }
         }
@@ -65,15 +61,11 @@ public class ReporteServicio {
     /** 3. ¿Qué enfermero atiende al residente? Vacío si no tiene. */
     public Optional<PersonaDTO> enfermeroDeResidente(int idResidente) {
         buscarResidente(idResidente);                           // si no existe, lanza la excepción
-        Optional<Reserva> reserva = buscarReservaDe(idResidente);
-        if (reserva.isEmpty()) {
+        Optional<Habitacion> habitacion = buscarHabitacionDe(idResidente);
+        if (habitacion.isEmpty() || !habitacion.get().tieneEnfermero()) {
             return Optional.empty();
         }
-        Optional<Asignacion> asignacion = asignacionDAO.buscarPorId(reserva.get().getCodigoHabitacion());
-        if (asignacion.isEmpty()) {
-            return Optional.empty();
-        }
-        Optional<Enfermero> enfermero = enfermeroDAO.buscarPorId(asignacion.get().getIdEnfermero());
+        Optional<Enfermero> enfermero = enfermeroDAO.buscarPorId(habitacion.get().getIdEnfermero());
         if (enfermero.isEmpty()) {
             return Optional.empty();
         }
@@ -88,13 +80,12 @@ public class ReporteServicio {
         return residente.get();
     }
 
-    private Optional<Reserva> buscarReservaDe(int idResidente) {
-        for (Reserva r : reservaDAO.listarTodos()) {
-            if (r.getIdResidente() == idResidente) {
-                return Optional.of(r);
+    private Optional<Habitacion> buscarHabitacionDe(int idResidente) {
+        for (Habitacion h : habitacionDAO.listarTodos()) {
+            if (h.estaOcupadaPor(idResidente)) {
+                return Optional.of(h);
             }
         }
         return Optional.empty();
     }
-
 }

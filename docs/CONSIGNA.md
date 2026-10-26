@@ -46,10 +46,11 @@ Los ids y los códigos se generan automáticamente y de manera incremental. El u
 | Punto de la consigna | Dónde está |
 |---|---|
 | CRUD de residentes y enfermeros | `VistaPersonas` → `PersonaController` → `PersonaServicio<T>` |
-| CRUD de habitaciones | `VistaHabitaciones` → `HabitacionServicio`: alta, listado, consulta (`obtener`) y baja. No hay "modificar" porque el código es la identidad y el estado se calcula |
-| Estado ocupada / libre | Se calcula a partir de las reservas (`HabitacionServicio.listar()`), no se guarda: así hay una sola fuente de verdad |
-| Residente ↔ Habitación, uno a uno | `ReservaServicio.reservar()` |
-| Enfermero → Habitaciones, uno a muchos | `AsignacionServicio.asignar()` |
+| CRUD de habitaciones | `VistaHabitaciones` → `HabitacionServicio`: alta, listado, consulta (`obtener`) y baja. No hay "modificar" porque el código es la identidad; el residente y el enfermero se cambian desde reservas y asignaciones |
+| Estado ocupada / libre | `Habitacion.isOcupada()`: está ocupada si tiene `idResidente`. No hay un campo `ocupada` aparte, así hay una sola fuente de verdad |
+| Reserva y Asignación | No son archivos aparte: se guardan dentro de la habitación (`idResidente`, `idEnfermero`), porque ninguna relación es muchos a muchos ni tiene datos propios. Siguen existiendo como funcionalidad: `ReservaServicio` y `AsignacionServicio` |
+| Residente ↔ Habitación, uno a uno | `ReservaServicio.reservar()`: controla que el residente no tenga otra habitación y que la habitación esté libre |
+| Enfermero → Habitaciones, uno a muchos | `AsignacionServicio.asignar()`: un enfermero puede estar en varias habitaciones, cada habitación guarda uno solo |
 | Las 3 consultas | `VistaReportes` → `ReporteServicio`. La 1 devuelve el residente con su habitación (`PersonaHabitacionDTO`) |
 | Menú principal y un menú por entidad | `MenuPrincipal` + una `Vista` por tema |
 | Ids y códigos automáticos e incrementales | `PersonaServicio.generarId()` (residentes desde 1001, enfermeros desde 2001) y `HabitacionServicio.generarNumero()` (desde HAB-101). El último número usado se guarda con `SecuenciaDAO` (`data/ultimo-*.txt`), así no se repite aunque se borre el registro |

@@ -27,25 +27,26 @@ classDiagram
   }
   class Habitacion {
     -String codigo
+    -Integer idResidente
+    -Integer idEnfermero
+    +isOcupada() boolean
+    +tieneEnfermero() boolean
+    +estaOcupadaPor(int) boolean
+    +esAtendidaPor(int) boolean
+    +conResidente(Integer) Habitacion
+    +conEnfermero(Integer) Habitacion
     +normalizarCodigo(String)$ String
-  }
-  class Reserva {
-    -int idResidente
-    -String codigoHabitacion
-  }
-  class Asignacion {
-    -int idEnfermero
-    -String codigoHabitacion
   }
   Persona <|-- Residente
   Persona <|-- Enfermero
-  Residente "1" -- "0..1" Reserva : ocupa
-  Habitacion "1" -- "0..1" Reserva : tiene
-  Enfermero "1" -- "0..*" Asignacion : atiende
-  Habitacion "1" -- "0..1" Asignacion : tiene
+  Residente "0..1" -- "0..1" Habitacion : ocupa
+  Enfermero "0..1" -- "0..*" Habitacion : atiende
 ```
 
-`Habitacion` no tiene un campo `ocupada`: se calcula buscando si existe una `Reserva` con su código.
+La reserva y la asignación se guardan **dentro de la habitación**: `idResidente` e `idEnfermero` (null si no hay). No hace falta una clase intermedia porque ninguna relación es muchos a muchos.
+
+- `isOcupada()` es `idResidente != null`: no hay un campo `ocupada` aparte que se pueda desincronizar.
+- `Habitacion` sigue siendo inmutable. `conResidente(id)` y `conEnfermero(id)` devuelven una copia con el dato nuevo (`null` para liberar o quitar), y el servicio la guarda con `actualizar`.
 
 ## 2. Persistencia (DAO)
 
@@ -74,8 +75,6 @@ classDiagram
   ArchivoDAO <|-- ResidenteDAOArchivo
   ArchivoDAO <|-- EnfermeroDAOArchivo
   ArchivoDAO <|-- HabitacionDAOArchivo
-  ArchivoDAO <|-- ReservaDAOArchivo
-  ArchivoDAO <|-- AsignacionDAOArchivo
   class SecuenciaDAO {
     <<interface>>
     +leerUltimo() int
@@ -90,9 +89,7 @@ classDiagram
 |---|---|---|---|
 | `ResidenteDAOArchivo` | `Residente` | `Integer` | `1001,30111222,Juan,Perez` |
 | `EnfermeroDAOArchivo` | `Enfermero` | `Integer` | `2001,28999111,Ana,Diaz` |
-| `HabitacionDAOArchivo` | `Habitacion` | `String` | `HAB-101` |
-| `ReservaDAOArchivo` | `Reserva` | `String` (código) | `1001,HAB-101` |
-| `AsignacionDAOArchivo` | `Asignacion` | `String` (código) | `2001,HAB-101` |
+| `HabitacionDAOArchivo` | `Habitacion` | `String` | `HAB-101,1001,2001` (o `HAB-104,,` si está libre y sin enfermero) |
 
 ## 3. Servicios
 

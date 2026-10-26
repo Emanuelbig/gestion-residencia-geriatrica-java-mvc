@@ -2,8 +2,8 @@ package prog2.gestiongeriatrica.servicios;
 
 import prog2.gestiongeriatrica.dao.GenericDAO;
 import prog2.gestiongeriatrica.dao.SecuenciaDAO;
-import prog2.gestiongeriatrica.modelos.Asignacion;
 import prog2.gestiongeriatrica.modelos.Enfermero;
+import prog2.gestiongeriatrica.modelos.Habitacion;
 import prog2.gestiongeriatrica.modelos.Residente;
 
 /**
@@ -14,14 +14,14 @@ public class EnfermeroServicio extends PersonaServicio<Enfermero> {
 
     private static final int PRIMER_ID = 2001;
 
-    private final GenericDAO<Asignacion, String> asignacionDAO;   // para no borrar un enfermero con habitaciones
+    private final GenericDAO<Habitacion, String> habitacionDAO;   // para no borrar un enfermero con habitaciones
 
     public EnfermeroServicio(GenericDAO<Enfermero, Integer> enfermeroDAO,
                              GenericDAO<Residente, Integer> residenteDAO,
-                             GenericDAO<Asignacion, String> asignacionDAO,
+                             GenericDAO<Habitacion, String> habitacionDAO,
                              SecuenciaDAO secuencia) {
         super(enfermeroDAO, residenteDAO, secuencia, PRIMER_ID);
-        this.asignacionDAO = asignacionDAO;
+        this.habitacionDAO = habitacionDAO;
     }
 
     @Override
@@ -31,8 +31,8 @@ public class EnfermeroServicio extends PersonaServicio<Enfermero> {
 
     @Override
     protected boolean estaEnUso(int id) {
-        for (Asignacion a : asignacionDAO.listarTodos()) {
-            if (a.getIdEnfermero() == id) {
+        for (Habitacion h : habitacionDAO.listarTodos()) {
+            if (h.esAtendidaPor(id)) {
                 return true;
             }
         }
