@@ -1,5 +1,6 @@
 package prog2.gestiongeriatrica.vistas;
 
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
@@ -11,7 +12,15 @@ import java.util.Scanner;
  */
 public class Consola {
 
-    private final Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8);
+    private final Scanner scanner = new Scanner(System.in, codificacion());
+
+    /**
+     * Codificación de los acentos. En cmd se usa la de la terminal (si no, "Geriátrica" sale mal);
+     * en NetBeans no hay terminal (System.console() es null) y se usa UTF-8.
+     */
+    public static Charset codificacion() {
+        return System.console() != null ? System.console().charset() : StandardCharsets.UTF_8;
+    }
 
     public String pedirTexto(String mensaje) {
         String texto = "";

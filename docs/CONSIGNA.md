@@ -45,7 +45,7 @@ Los ids y los códigos se generan automáticamente y de manera incremental. El u
 
 | Punto de la consigna | Dónde está |
 |---|---|
-| CRUD de residentes y enfermeros | `VistaPersonas` → `PersonaController` → `PersonaServicio<T>` |
+| CRUD de residentes y enfermeros | `VistaResidentes` / `VistaEnfermeros` (heredan de `VistaPersonas`) → `PersonaController` → `PersonaServicio<T>`. Consultar muestra la ficha con las relaciones |
 | CRUD de habitaciones | `VistaHabitaciones` → `HabitacionServicio`: alta, listado, consulta (`obtener`) y baja. No hay "modificar" porque el código es la identidad; el residente y el enfermero se cambian desde reservas y asignaciones |
 | Estado ocupada / libre | `Habitacion.isOcupada()`: está ocupada si tiene `idResidente`. No hay un campo `ocupada` aparte, así hay una sola fuente de verdad |
 | Reserva y Asignación | No son archivos aparte: se guardan dentro de la habitación (`idResidente`, `idEnfermero`), porque ninguna relación es muchos a muchos ni tiene datos propios. Siguen existiendo como funcionalidad: `ReservaServicio` y `AsignacionServicio` |

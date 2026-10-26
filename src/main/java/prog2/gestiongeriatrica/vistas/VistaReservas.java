@@ -33,7 +33,7 @@ public class VistaReservas implements Vista {
         while (!volver) {
             System.out.println();
             System.out.println("-- RESERVAS --");
-            System.out.println("1. Reservar | 2. Liberar | 3. Volver");
+            System.out.println("1. Reservar | 2. Liberar | 3. Ver ocupadas | 4. Volver");
             int opcion = consola.pedirEntero("Opción: ");
             try {
                 switch (opcion) {
@@ -44,6 +44,9 @@ public class VistaReservas implements Vista {
                         liberar();
                         break;
                     case 3:
+                        verOcupadas();
+                        break;
+                    case 4:
                         volver = true;
                         break;
                     default:
@@ -76,17 +79,24 @@ public class VistaReservas implements Vista {
     }
 
     private void liberar() {
-        List<PersonaHabitacionDTO> ocupadas = controller.listar();
-        if (ocupadas.isEmpty()) {
-            System.out.println("No hay habitaciones ocupadas.");
-        } else {
-            System.out.println("Habitaciones ocupadas:");
-            for (PersonaHabitacionDTO o : ocupadas) {
-                System.out.println("  " + o.getCodigoHabitacion() + " | " + o.getPersona().getNombreCompleto());
-            }
+        if (verOcupadas()) {
             controller.liberar(pedirCodigo());
             System.out.println("Liberada.");
         }
+    }
+
+    /** Muestra las habitaciones ocupadas con su residente. Devuelve false si no hay ninguna. */
+    private boolean verOcupadas() {
+        List<PersonaHabitacionDTO> ocupadas = controller.listar();
+        if (ocupadas.isEmpty()) {
+            System.out.println("No hay habitaciones ocupadas.");
+            return false;
+        }
+        System.out.println("Habitaciones ocupadas:");
+        for (PersonaHabitacionDTO o : ocupadas) {
+            System.out.println("  " + o.getCodigoHabitacion() + " | " + o.getPersona().getNombreCompleto());
+        }
+        return true;
     }
 
     private String pedirCodigo() {

@@ -1,7 +1,6 @@
 package prog2.gestiongeriatrica;
 
 import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import prog2.gestiongeriatrica.controllers.AsignacionController;
 import prog2.gestiongeriatrica.controllers.EnfermeroController;
@@ -29,10 +28,11 @@ import prog2.gestiongeriatrica.servicios.ResidenteServicio;
 import prog2.gestiongeriatrica.vistas.Consola;
 import prog2.gestiongeriatrica.vistas.MenuPrincipal;
 import prog2.gestiongeriatrica.vistas.VistaAsignaciones;
+import prog2.gestiongeriatrica.vistas.VistaEnfermeros;
 import prog2.gestiongeriatrica.vistas.VistaHabitaciones;
-import prog2.gestiongeriatrica.vistas.VistaPersonas;
 import prog2.gestiongeriatrica.vistas.VistaReportes;
 import prog2.gestiongeriatrica.vistas.VistaReservas;
+import prog2.gestiongeriatrica.vistas.VistaResidentes;
 
 /**
  * Arma el sistema y lo arranca. Es el único lugar donde se eligen las
@@ -46,7 +46,8 @@ public class GestionGeriatrica {
 
     public static void main(String[] args) {
 
-        System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
+        // los acentos se escriben con la misma codificación que usa la pantalla (cmd o NetBeans)
+        System.setOut(new PrintStream(System.out, true, Consola.codificacion()));
 
         try {
             armarSistema().iniciar();
@@ -79,18 +80,22 @@ public class GestionGeriatrica {
         AsignacionServicio asignacionServicio = new AsignacionServicio(habitacionDAO, enfermeroDAO);
         ReporteServicio reporteServicio = new ReporteServicio(residenteDAO, enfermeroDAO, habitacionDAO);
 
-        // 3. Vista (el controller de enfermeros lo usan dos pantallas)
+        // 3. Vista (los controllers de residentes y enfermeros también los usan otras pantallas para mostrar listas)
         PersonaController residenteController = new ResidenteController(residenteServicio);
         PersonaController enfermeroController = new EnfermeroController(enfermeroServicio);
 
+        // estos dos los usan varias pantallas (las fichas de residentes y enfermeros, las consultas)
+        AsignacionController asignacionController = new AsignacionController(asignacionServicio);
+        ReporteController reporteController = new ReporteController(reporteServicio);
+
         Consola consola = new Consola();
         MenuPrincipal menu = new MenuPrincipal(consola);
-        menu.registrar(new VistaPersonas("Residentes", residenteController, consola));
-        menu.registrar(new VistaPersonas("Enfermeros", enfermeroController, consola));
+        menu.registrar(new VistaResidentes(residenteController, reporteController, consola));
+        menu.registrar(new VistaEnfermeros(enfermeroController, asignacionController, reporteController, consola));
         menu.registrar(new VistaHabitaciones(new HabitacionController(habitacionServicio), consola));
         menu.registrar(new VistaReservas(new ReservaController(reservaServicio), consola));
-        menu.registrar(new VistaAsignaciones(new AsignacionController(asignacionServicio), enfermeroController, consola));
-        menu.registrar(new VistaReportes(new ReporteController(reporteServicio), consola));
+        menu.registrar(new VistaAsignaciones(asignacionController, enfermeroController, consola));
+        menu.registrar(new VistaReportes(reporteController, residenteController, enfermeroController, consola));
         return menu;
     }
 }

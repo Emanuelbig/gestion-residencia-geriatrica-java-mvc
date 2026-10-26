@@ -2,6 +2,7 @@ package prog2.gestiongeriatrica.vistas;
 
 import java.util.List;
 import java.util.Optional;
+import prog2.gestiongeriatrica.controllers.PersonaController;
 import prog2.gestiongeriatrica.controllers.ReporteController;
 import prog2.gestiongeriatrica.dto.PersonaDTO;
 import prog2.gestiongeriatrica.dto.PersonaHabitacionDTO;
@@ -9,15 +10,21 @@ import prog2.gestiongeriatrica.excepciones.GeriatricoException;
 
 /**
  * Pantalla de consultas que cruzan residentes, enfermeros y habitaciones.
+ * Antes de pedir un id muestra a quién se puede consultar.
  * @author Emanuel
  */
 public class VistaReportes implements Vista {
 
     private final ReporteController controller;
+    private final PersonaController residentes;   // para mostrar la lista antes de pedir el id
+    private final PersonaController enfermeros;
     private final Consola consola;
 
-    public VistaReportes(ReporteController controller, Consola consola) {
+    public VistaReportes(ReporteController controller, PersonaController residentes,
+                         PersonaController enfermeros, Consola consola) {
         this.controller = controller;
+        this.residentes = residentes;
+        this.enfermeros = enfermeros;
         this.consola = consola;
     }
 
@@ -61,6 +68,9 @@ public class VistaReportes implements Vista {
     }
 
     private void habitacionDeResidente() {
+        if (!mostrarLista("Residentes", residentes.listar())) {
+            return;
+        }
         int id = consola.pedirEntero("Id del residente: ");
         PersonaHabitacionDTO dato = controller.habitacionDeResidente(id);
         String nombre = dato.getPersona().getNombreCompleto();
@@ -72,6 +82,9 @@ public class VistaReportes implements Vista {
     }
 
     private void residentesDeEnfermero() {
+        if (!mostrarLista("Enfermeros", enfermeros.listar())) {
+            return;
+        }
         int id = consola.pedirEntero("Id del enfermero: ");
         List<PersonaDTO> residentes = controller.residentesDeEnfermero(id);
         if (residentes.isEmpty()) {
@@ -83,6 +96,9 @@ public class VistaReportes implements Vista {
     }
 
     private void enfermeroDeResidente() {
+        if (!mostrarLista("Residentes", residentes.listar())) {
+            return;
+        }
         int id = consola.pedirEntero("Id del residente: ");
         Optional<PersonaDTO> enfermero = controller.enfermeroDeResidente(id);
         if (enfermero.isPresent()) {
@@ -91,5 +107,18 @@ public class VistaReportes implements Vista {
         } else {
             System.out.println("No tiene enfermero asignado.");
         }
+    }
+
+    /** Lista las personas para elegir. Devuelve false si no hay ninguna. */
+    private boolean mostrarLista(String titulo, List<PersonaDTO> personas) {
+        if (personas.isEmpty()) {
+            System.out.println("No hay " + titulo.toLowerCase() + " cargados.");
+            return false;
+        }
+        System.out.println(titulo + ":");
+        for (PersonaDTO p : personas) {
+            System.out.println("  " + p.getId() + " | " + p.getNombreCompleto());
+        }
+        return true;
     }
 }

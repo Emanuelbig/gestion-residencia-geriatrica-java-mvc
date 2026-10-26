@@ -174,6 +174,8 @@ classDiagram
   }
   MenuPrincipal o-- Vista
   Vista <|.. VistaPersonas
+  VistaPersonas <|-- VistaResidentes
+  VistaPersonas <|-- VistaEnfermeros
   Vista <|.. VistaHabitaciones
   Vista <|.. VistaReservas
   Vista <|.. VistaAsignaciones
@@ -184,7 +186,11 @@ classDiagram
   VistaPersonas --> Consola
 ```
 
-`VistaPersonas` usa la interfaz `PersonaController`, por eso la misma pantalla sirve para residentes y enfermeros. Cada controller recibe su servicio por constructor.
+- `VistaPersonas` es abstracta y usa la interfaz `PersonaController`: el menú (alta, listar, consultar, modificar, baja) está escrito una sola vez para residentes y enfermeros. Cada controller recibe su servicio por constructor.
+- Cada hija completa `mostrarFicha(...)` (opción Consultar):
+  - `VistaResidentes` muestra la habitación y el enfermero, con el `ReporteController`.
+  - `VistaEnfermeros` muestra las habitaciones que atiende y sus residentes, con el `AsignacionController` y el `ReporteController`.
+- Antes de pedir un id o un código, todas las pantallas muestran la lista para elegir.
 
 ## 5. Excepciones
 

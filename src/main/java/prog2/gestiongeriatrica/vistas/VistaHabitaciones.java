@@ -67,19 +67,25 @@ public class VistaHabitaciones implements Vista {
         System.out.println("Registrada la habitación " + codigo + ".");
     }
 
-    private void listar() {
+    /** Muestra el listado. Devuelve false si no hay habitaciones, así no se pide un código que no se puede elegir. */
+    private boolean listar() {
         List<HabitacionDTO> habitaciones = controller.listar();
         if (habitaciones.isEmpty()) {
             System.out.println("No hay habitaciones.");
+            return false;
         }
         for (HabitacionDTO h : habitaciones) {
             String estado = h.isOcupada() ? "ocupada" : "libre";
             System.out.println(h.getCodigo() + " | " + estado);
         }
+        return true;
     }
 
+    // consultar y baja primero muestran la lista: el usuario elige el código mirándola
     private void consultar() {
-        listar();
+        if (!listar()) {
+            return;
+        }
         HabitacionDetalleDTO h = controller.buscar(pedirCodigo());
         System.out.println("Habitación " + h.getCodigo() + ":");
         if (h.isOcupada()) {
@@ -97,9 +103,10 @@ public class VistaHabitaciones implements Vista {
     }
 
     private void baja() {
-        listar();
-        controller.baja(pedirCodigo());
-        System.out.println("Eliminada.");
+        if (listar()) {
+            controller.baja(pedirCodigo());
+            System.out.println("Eliminada.");
+        }
     }
 
     private String pedirCodigo() {

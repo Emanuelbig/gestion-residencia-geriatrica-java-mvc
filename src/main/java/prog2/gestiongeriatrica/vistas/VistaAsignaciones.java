@@ -36,7 +36,7 @@ public class VistaAsignaciones implements Vista {
         while (!volver) {
             System.out.println();
             System.out.println("-- ASIGNACIONES --");
-            System.out.println("1. Asignar | 2. Quitar | 3. Volver");
+            System.out.println("1. Asignar | 2. Quitar | 3. Ver asignaciones | 4. Volver");
             int opcion = consola.pedirEntero("Opción: ");
             try {
                 switch (opcion) {
@@ -47,6 +47,9 @@ public class VistaAsignaciones implements Vista {
                         quitar();
                         break;
                     case 3:
+                        verAsignaciones();
+                        break;
+                    case 4:
                         volver = true;
                         break;
                     default:
@@ -79,17 +82,24 @@ public class VistaAsignaciones implements Vista {
     }
 
     private void quitar() {
-        List<PersonaHabitacionDTO> asignadas = controller.listar();
-        if (asignadas.isEmpty()) {
-            System.out.println("No hay habitaciones con enfermero.");
-        } else {
-            System.out.println("Habitaciones con enfermero:");
-            for (PersonaHabitacionDTO a : asignadas) {
-                System.out.println("  " + a.getCodigoHabitacion() + " | " + a.getPersona().getNombreCompleto());
-            }
+        if (verAsignaciones()) {
             controller.quitar(pedirCodigo());
             System.out.println("Asignación quitada.");
         }
+    }
+
+    /** Muestra las habitaciones con su enfermero. Devuelve false si no hay ninguna. */
+    private boolean verAsignaciones() {
+        List<PersonaHabitacionDTO> asignadas = controller.listar();
+        if (asignadas.isEmpty()) {
+            System.out.println("No hay habitaciones con enfermero.");
+            return false;
+        }
+        System.out.println("Habitaciones con enfermero:");
+        for (PersonaHabitacionDTO a : asignadas) {
+            System.out.println("  " + a.getCodigoHabitacion() + " | " + a.getPersona().getNombreCompleto());
+        }
+        return true;
     }
 
     private String pedirCodigo() {

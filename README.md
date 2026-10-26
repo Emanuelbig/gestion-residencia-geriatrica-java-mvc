@@ -12,12 +12,14 @@ La consigna original del parcial, y dónde se cumple cada punto, está en [docs/
 
 | Menú | Operaciones |
 |---|---|
-| Residentes | Alta, listado, modificación y baja |
-| Enfermeros | Alta, listado, modificación y baja |
+| Residentes | Alta, listado, consulta (ficha con su habitación y su enfermero), modificación y baja |
+| Enfermeros | Alta, listado, consulta (ficha con las habitaciones y los residentes que atiende), modificación y baja |
 | Habitaciones | Alta (código automático), listado (libre / ocupada), consulta (quién la ocupa y quién la atiende) y baja |
-| Reservas | Asignar una habitación a un residente y liberarla. Antes muestra los residentes sin habitación y las habitaciones libres |
-| Asignaciones | Asignar un enfermero a una habitación y quitarlo. Antes muestra los enfermeros y las habitaciones sin enfermero |
+| Reservas | Asignar una habitación a un residente, liberarla y ver las ocupadas. Antes muestra los residentes sin habitación y las habitaciones libres |
+| Asignaciones | Asignar un enfermero a una habitación, quitarlo y ver las asignaciones. Antes muestra los enfermeros y las habitaciones sin enfermero |
 | Consultas | Residente con su habitación · Residentes de un enfermero · Enfermero de un residente |
+
+Cada vez que el sistema pide un id o un código, antes muestra la lista para elegir. **Listar** muestra un resumen de todos; **Consultar** muestra la ficha completa de uno, con sus relaciones.
 
 Las habitaciones no tienen "modificar" a mano: su código es su identidad, y quién la ocupa o la atiende se cambia desde las reservas y las asignaciones.
 
@@ -76,7 +78,7 @@ flowchart TB
 ```mermaid
 sequenceDiagram
     actor U as Usuario
-    participant V as VistaPersonas
+    participant V as VistaResidentes
     participant C as ResidenteController
     participant S as ResidenteServicio
     participant D as GenericDAO
@@ -112,7 +114,7 @@ Los diagramas UML completos están en [docs/UML.md](docs/UML.md).
 | Concepto | Dónde se ve |
 |---|---|
 | Herencia y clases abstractas | `Persona` → `Residente`, `Enfermero` · `ArchivoDAO` · `PersonaServicio` · `GeriatricoException` |
-| Polimorfismo | `toString()` de `Persona` usa `getRol()` · `MenuPrincipal` muestra cualquier `Vista` · una sola `VistaPersonas` para dos tipos de persona |
+| Polimorfismo | `toString()` de `Persona` usa `getRol()` · `MenuPrincipal` muestra cualquier `Vista` · `VistaPersonas` (abstracta) tiene el menú una sola vez y cada hija (`VistaResidentes`, `VistaEnfermeros`) completa su ficha |
 | Encapsulamiento | Atributos `private final`, ids sin setter, `listarTodos()` devuelve una copia |
 | Genéricos | `GenericDAO<T, ID>`, `ArchivoDAO<T, ID>`, `PersonaServicio<T extends Persona>` |
 | **S** — Responsabilidad única | Un servicio por tema; la vista solo muestra, el DAO solo guarda |
